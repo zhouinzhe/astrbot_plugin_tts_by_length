@@ -32,7 +32,11 @@
     "description": "回复里有链接时怎么处理",
     "type": "string",
     "default": "append_links",
-    "options": ["append_links", "strip", "send_text"],
+    "options": [
+      "append_links",
+      "strip",
+      "send_text"
+    ],
     "hint": "append_links：语音不读链接，链接以文字跟在语音后面；strip：语音不读，链接直接丢掉；send_text：只要有链接就整条发文字、不转语音。"
   },
   "skip_if_code": {
@@ -40,6 +44,18 @@
     "type": "bool",
     "default": true,
     "hint": "回复里有 ``` 代码块时整条发文字。关闭后会把代码块去掉，只读剩下的文字。"
+  },
+  "skip_if_at": {
+    "description": "含 @ 时不转语音",
+    "type": "bool",
+    "default": true,
+    "hint": "消息链里有 @ 组件，或正文里出现 @QQ号、[At:123456]、[CQ:at,...] 这类文本时，整条发文字、不调用 TTS。"
+  },
+  "strip_at_text": {
+    "description": "朗读时去掉文本形式的 @",
+    "type": "bool",
+    "default": true,
+    "hint": "去掉 @QQ号、[At:123456]、[CQ:at,...]，不读也不计入长度。关闭「含 @ 时不转语音」后，这个开关保证 ID 不会被读出来。"
   },
   "strip_emoji": {
     "description": "朗读时去掉 Emoji 和符号",

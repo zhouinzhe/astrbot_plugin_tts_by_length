@@ -21,6 +21,21 @@ _EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200
 _SPACES = re.compile(r"\s+")
 _SPEAKABLE = re.compile(r"\w")  # 至少有一个字母/数字/汉字，否则没东西可读
 
+# 文本形式的 @：@123456（QQ 号）、AstrBot 的 [At:123456]、OneBot 的 [CQ:at,qq=123456]。
+# 前面不能紧跟字母数字或 . / : 等，避免误伤邮箱（a@b.com）和链接（/@user）。
+# 不匹配 "@昵称"：昵称没有固定边界，容易把 "@了@了" 这类正常句子误判成艾特。
+_AT_TEXT = re.compile(
+    r"\[At:[^\]]*\]"
+    r"|\[CQ:at,[^\]]*\]"
+    r"|(?<![A-Za-z0-9_.\-/+%:])[@＠]\d{5,12}(?!\d)",
+    re.IGNORECASE,
+)
+
+# 消息链里真正的 @ 组件（At / AtAll）。用 getattr 兼容不同版本。
+_AT_TYPES = tuple(t for t in (getattr(Comp, "At", None), getattr(Comp, "AtAll", None)) if t)
+# 重排消息链时要留在最前面的组件：引用 + @
+_HEAD_TYPES = tuple(t for t in (getattr(Comp, "Reply", None), *_AT_TYPES) if t)
+
 
 class TTSLengthGate(Star):
     """按回复长度决定是否转语音：短文本走 TTS，长文本直接发文字。
@@ -56,10 +71,10 @@ class TTSLengthGate(Star):
         return bool(self.config.get(key, default))
 
     # ---------- 文本处理 ----------
-    def _prepare(self, raw: str) -> tuple[str, list[str], bool]:
+    def _prepare(self, raw: str) -> tuple[str, list[str], bool, bool]:
         """把原文整理成适合朗读的文本。
 
-        返回 (朗读文本, 提取到的链接, 原文是否含代码块)。
+        返回 (朗读文本, 提取到的链接, 原文是否含代码块, 正文里是否有文本形式的 @)。
         长度判断也基于朗读文本，所以很长的链接不会让短回复变成"长文本"。
         """
         urls: list[str] = []
@@ -89,6 +104,11 @@ class TTSLengthGate(Star):
         else:
             urls = []
 
+        # 先检测再过滤：检测结果交给上层决定要不要整条发文字
+        has_at = bool(_AT_TEXT.search(text))
+        if self._bool("strip_at_text", True):
+            text = _AT_TEXT.sub("", text)
+
         if self._bool("cleanup_markdown", True):
             text = _MD_MARK.sub("", text)
         if self._bool("strip_emoji", True):
@@ -101,7 +121,7 @@ class TTSLengthGate(Star):
                 logger.warning(f"[tts_by_length] 自定义过滤正则无效 {pattern!r}: {exc}")
 
         text = _SPACES.sub(" ", text).strip()
-        return text, list(dict.fromkeys(urls)), has_code
+        return text, list(dict.fromkeys(urls)), has_code, has_at
 
     # ---------- TTS 调用 ----------
     async def _synthesize(self, event: AstrMessageEvent, text: str) -> str | None:
@@ -153,10 +173,20 @@ class TTSLengthGate(Star):
         if any(isinstance(c, Comp.Record) for c in result.chain):
             return
 
+        # 消息链里带 @ 组件：语音没法 @ 人，整条发文字
+        skip_at = self._bool("skip_if_at", True)
+        if skip_at and any(isinstance(c, _AT_TYPES) for c in result.chain):
+            logger.debug("[tts_by_length] 消息链含 @ 组件，直接发文字")
+            return
+
         raw = "".join(
             (getattr(c, "text", "") or "") for c in result.chain if isinstance(c, Comp.Plain)
         )
-        spoken, urls, has_code = self._prepare(raw)
+        spoken, urls, has_code, has_at = self._prepare(raw)
+
+        if skip_at and has_at:
+            logger.debug("[tts_by_length] 正文含 @ 文本，直接发文字")
+            return
 
         if has_code and self._bool("skip_if_code", True):
             logger.debug("[tts_by_length] 含代码块，直接发文字")
@@ -195,16 +225,21 @@ class TTSLengthGate(Star):
             return
 
         keep_text = self._bool("keep_text", False)
-        new_chain = []
+        # 引用 / @ 留在最前面（保持原有顺序），然后是语音，其余组件（如图片）跟在后面
+        head = [c for c in result.chain if isinstance(c, _HEAD_TYPES)]
+        rest = [
+            c
+            for c in result.chain
+            if not isinstance(c, (Comp.Plain, Comp.Record) + _HEAD_TYPES)
+        ]
+        new_chain = list(head)
         if keep_text:
             new_chain.append(Comp.Plain(text=raw, convert=False))
         new_chain.append(voice)
         if urls and not keep_text and url_action == "append_links":
             # 语音里不读链接，但把链接以文字形式跟在语音后面，避免用户拿不到
             new_chain.append(Comp.Plain(text="\n".join(urls), convert=False))
-        for c in result.chain:
-            if not isinstance(c, (Comp.Plain, Comp.Record)):
-                new_chain.append(c)
+        new_chain.extend(rest)
         result.chain = new_chain
 
         limit = f"≤ {max_chars}" if max_chars > 0 else "（不限长）"
