@@ -1,0 +1,84 @@
+{
+  "enabled": {
+    "description": "启用长度判断",
+    "type": "bool",
+    "default": true
+  },
+  "max_chars": {
+    "description": "语音长度上限（字符数）",
+    "type": "int",
+    "default": 80,
+    "hint": "朗读文本超过该长度就直接发文字，不调用 TTS；设为 0 表示不限制长度。长度按过滤链接、代码块、表情之后的文本计算。"
+  },
+  "min_chars": {
+    "description": "语音长度下限（字符数）",
+    "type": "int",
+    "default": 1,
+    "hint": "短于该长度的回复不转语音。"
+  },
+  "trigger_probability": {
+    "description": "短文本转语音的概率（0~1）",
+    "type": "float",
+    "default": 1.0,
+    "hint": "插件接管 TTS 后，AstrBot 自带的触发概率要设为 0，概率改在这里控制。"
+  },
+  "filter_url": {
+    "description": "朗读时过滤链接",
+    "type": "bool",
+    "default": true,
+    "hint": "去掉 http(s)://、ftp://、www. 开头的链接，Markdown 链接只读文字部分，Markdown 图片整体丢弃。"
+  },
+  "url_action": {
+    "description": "回复里有链接时怎么处理",
+    "type": "string",
+    "default": "append_links",
+    "options": ["append_links", "strip", "send_text"],
+    "hint": "append_links：语音不读链接，链接以文字跟在语音后面；strip：语音不读，链接直接丢掉；send_text：只要有链接就整条发文字、不转语音。"
+  },
+  "skip_if_code": {
+    "description": "含代码块时不转语音",
+    "type": "bool",
+    "default": true,
+    "hint": "回复里有 ``` 代码块时整条发文字。关闭后会把代码块去掉，只读剩下的文字。"
+  },
+  "strip_emoji": {
+    "description": "朗读时去掉 Emoji 和符号",
+    "type": "bool",
+    "default": true,
+    "hint": "避免 TTS 把 😊 ✨ ♪ 之类读成奇怪的内容或报错。"
+  },
+  "cleanup_markdown": {
+    "description": "朗读前去掉 Markdown 符号",
+    "type": "bool",
+    "default": true
+  },
+  "custom_filter_patterns": {
+    "description": "自定义过滤规则（正则）",
+    "type": "list",
+    "default": [],
+    "hint": "匹配到的内容不朗读、也不计入长度。例如 （.*?） 可去掉全角括号里的动作描写；&&.+?&& 可去掉表情标记。"
+  },
+  "tts_timeout": {
+    "description": "TTS 超时时间（秒）",
+    "type": "float",
+    "default": 30,
+    "hint": "超过这个时间还没返回就放弃语音、直接发文字，避免回复被卡住；0 表示不限时。"
+  },
+  "keep_text": {
+    "description": "转语音时同时保留原文",
+    "type": "bool",
+    "default": false
+  },
+  "only_llm_result": {
+    "description": "只处理大模型回复",
+    "type": "bool",
+    "default": true,
+    "hint": "关闭后指令回复等其他文本也会参与判断。"
+  },
+  "skip_platforms": {
+    "description": "跳过的平台名",
+    "type": "list",
+    "default": [],
+    "hint": "例如 webchat、telegram；这些平台上不做判断，保持原样。"
+  }
+}
