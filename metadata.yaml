@@ -1,7 +1,7 @@
 name: astrbot_plugin_tts_by_length
 display_name: TTS 长短分流
-desc: 短句开口说，长文发文字。按回复长度自动选择语音或文字，朗读时过滤链接、代码、表情符号和 @，含 @ 的回复直接发文字。
-version: 1.2.0
+desc: 短句开口说，长文发文字。按回复长度自动选择语音或文字，朗读时过滤链接、代码、表情符号和 @。v2.0 新增语音记忆：让大模型知道自己发过什么语音，被人引用时认得出是哪一句。
+version: 2.0.0
 author: zhouinzhe
 repo: https://github.com/zhouinzhe/astrbot_plugin_tts_by_length
 tags:

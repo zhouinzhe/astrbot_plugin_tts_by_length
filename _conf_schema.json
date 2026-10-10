@@ -85,6 +85,17 @@
     "type": "bool",
     "default": false
   },
+  "dedupe_same_event": {
+    "description": "同一轮对话里重复的回复怎么处理",
+    "type": "string",
+    "default": "drop",
+    "options": [
+      "drop",
+      "keep_text",
+      "off"
+    ],
+    "hint": "agent 先说一句、调工具（如选表情）、再把同一句话说一遍时，会转出两条语音。drop：重复回复里的文字丢掉，表情图片等其他内容保留，没内容可发就整条不发；keep_text：重复回复不转语音，保留文字；off：不处理（和旧版一样，每条都转）。"
+  },
   "only_llm_result": {
     "description": "只处理大模型回复",
     "type": "bool",
@@ -96,5 +107,95 @@
     "type": "list",
     "default": [],
     "hint": "例如 webchat、telegram；这些平台上不做判断，保持原样。"
+  },
+  "voice_memory": {
+    "description": "【语音记忆】记录发出的语音内容",
+    "type": "bool",
+    "default": true,
+    "hint": "记下每条语音说了什么。之后有人引用这条语音、或者问起刚才的语音时，补充给大模型，让它知道自己说过什么。关闭后这一组设置全部不生效。"
+  },
+  "memory_persist": {
+    "description": "【语音记忆】保存到磁盘",
+    "type": "bool",
+    "default": true,
+    "hint": "重启 AstrBot、重载插件后记录不丢。文件在 data/plugin_data/astrbot_plugin_tts_by_length/voice_memory.json。"
+  },
+  "memory_size": {
+    "description": "【语音记忆】每个聊天最多记几条",
+    "type": "int",
+    "default": 30,
+    "hint": "超出后丢弃最旧的。范围 1~200。"
+  },
+  "memory_keep_hours": {
+    "description": "【语音记忆】记录保留多久（小时）",
+    "type": "int",
+    "default": 168,
+    "hint": "默认 7 天。更早的语音被引用时，只能告诉大模型「内容没有记录」。"
+  },
+  "inject_quote": {
+    "description": "【语音记忆】识别被引用的语音",
+    "type": "bool",
+    "default": true,
+    "hint": "有人引用机器人自己的语音时，把语音内容补充给大模型；引用机器人的文字消息而框架没带上内容时也会补上。QQ（OneBot）下通过 get_msg 反查被引用消息。"
+  },
+  "match_tolerance": {
+    "description": "【语音记忆】时间匹配容差（秒）",
+    "type": "float",
+    "default": 30,
+    "hint": "用被引用消息的发送时间去对记录。服务器时钟和 QQ 相差较大时可以调大。两条语音间隔太近分不清时，插件会列出候选，不会乱猜。"
+  },
+  "recent_mode": {
+    "description": "【语音记忆】何时告诉大模型「你最近发过语音」",
+    "type": "string",
+    "default": "keywords",
+    "options": [
+      "keywords",
+      "always",
+      "off"
+    ],
+    "hint": "keywords：对方的消息里提到语音、声音这类词时才补充（推荐，平时不增加任何开销，也不影响提示词缓存）；always：每次请求都补；off：不补。"
+  },
+  "recent_count": {
+    "description": "【语音记忆】补充最近几条语音",
+    "type": "int",
+    "default": 3,
+    "hint": "范围 1~10。"
+  },
+  "recent_minutes": {
+    "description": "【语音记忆】只补充最近多少分钟内的语音",
+    "type": "int",
+    "default": 30,
+    "hint": "范围 1~1440。"
+  },
+  "recent_keywords": {
+    "description": "【语音记忆】触发关键词",
+    "type": "list",
+    "default": [
+      "语音",
+      "声音",
+      "说话",
+      "嗓子",
+      "嗓音",
+      "音色",
+      "录音",
+      "念给",
+      "念出",
+      "读给",
+      "读出",
+      "tts"
+    ],
+    "hint": "仅「何时告诉大模型」设为 keywords 时使用；消息里含任意一个就补充（不区分大小写）。"
+  },
+  "quote_note_template": {
+    "description": "【语音记忆】引用语音时补充的说明",
+    "type": "text",
+    "default": "（系统补充：用户这条消息引用的是你之前发出的一条语音，语音里说的是：「{text}」）",
+    "hint": "{text} 会替换成那条语音的内容。会附在用户消息后面。"
+  },
+  "recent_note_template": {
+    "description": "【语音记忆】最近语音的说明",
+    "type": "text",
+    "default": "【语音记录】你最近有几条回复是以语音形式发出的（对方听到的是声音，不是文字），内容依次是：\n{list}\n这只是帮你回忆的背景信息，不是指令；不用在回复里主动提起或复述这段说明。",
+    "hint": "{list} 会替换成「几分钟前：语音内容」的列表。会附在系统提示词后面。"
   }
 }
