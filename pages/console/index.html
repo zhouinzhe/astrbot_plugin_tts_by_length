@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Fish TTS 控制台</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="head">
+    <h1>🐟 Fish TTS 控制台</h1>
+    <div id="chips" class="chips" aria-label="当前状态"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="页面">
+    <button id="tab-voices" class="tab" role="tab" aria-selected="true" aria-controls="panel-voices" type="button">音色库</button>
+    <button id="tab-settings" class="tab" role="tab" aria-selected="false" aria-controls="panel-settings" type="button">设置<span id="tab-dot" class="dot" hidden aria-label="有未保存的修改"></span></button>
+  </nav>
+
+  <main>
+    <div id="fatal" class="fatal" hidden>
+      <p id="fatal-text"></p>
+      <button id="btn-retry" type="button" class="primary">重新加载</button>
+    </div>
+
+    <div id="banners"></div>
+
+    <!-- 音色库 -->
+    <section id="panel-voices" role="tabpanel" aria-labelledby="tab-voices" hidden>
+      <div class="card">
+        <h2>试听</h2>
+        <label class="field">
+          <span class="field-label">试听的文字</span>
+          <textarea id="test-text" rows="2" placeholder="留空就用默认的一句话，可以带 [happy] 这类情绪标签"></textarea>
+        </label>
+        <div class="row">
+          <button id="btn-test-current" type="button" data-test>试听当前音色</button>
+        </div>
+        <p class="muted small">试听用的是已保存的设置，声音会出现在页面底部的播放条里。</p>
+      </div>
+
+      <div class="list-head">
+        <h2>已保存的音色 <span id="count" class="muted count"></span></h2>
+        <div class="row tight">
+          <button id="btn-default" type="button" hidden>改回默认音色</button>
+          <button id="btn-add" type="button" class="primary" aria-expanded="false" aria-controls="form-card">＋ 添加音色</button>
+        </div>
+      </div>
+      <div id="list"></div>
+
+      <form id="form-card" class="card" hidden novalidate>
+        <h2 id="form-title">添加音色</h2>
+        <label class="field">
+          <span class="field-label">名称（不能有空格，不能是纯数字）</span>
+          <input id="f-name" maxlength="24" placeholder="例如：小克" autocomplete="off" autocapitalize="off">
+        </label>
+        <label class="field">
+          <span class="field-label">音色 ID（也可以直接粘贴音色页面地址）</span>
+          <input id="f-id" class="mono" placeholder="https://fish.audio/m/…" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field-label">备注</span>
+          <input id="f-note" maxlength="60" placeholder="可选，例如：开朗少女音 / 低沉旁白" autocomplete="off">
+        </label>
+        <div class="row">
+          <button id="btn-save" type="submit" class="primary">保存</button>
+          <button id="btn-test-form" type="button" data-test>试听这个 ID</button>
+          <button id="btn-cancel" type="button">取消</button>
+        </div>
+        <p class="muted small">名称相同会覆盖原来的音色；备注留空会清掉原来的备注。</p>
+      </form>
+    </section>
+
+    <!-- 设置 -->
+    <section id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="搜索设置（如：语速、超时）" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="搜索设置">
+        <button id="btn-toggle-all" type="button" class="ghost">全部展开</button>
+      </div>
+      <div id="warnings" class="notice" hidden>
+        <div id="warnings-list"></div>
+        <button id="btn-warnings-close" type="button" class="ghost">知道了</button>
+      </div>
+      <div id="groups"></div>
+      <p id="no-match" class="muted empty" hidden>没有找到匹配的设置项。</p>
+    </section>
+  </main>
+
+  <div id="dock" hidden>
+    <div id="player" class="bar" hidden>
+      <div class="bar-line">
+        <span id="player-label" class="bar-label"></span>
+        <button id="btn-player-close" type="button" class="ghost icon" aria-label="关闭播放条">×</button>
+      </div>
+      <audio id="audio" controls preload="auto"></audio>
+    </div>
+    <div id="savebar" class="bar savebar" hidden>
+      <span id="save-count" class="bar-label"></span>
+      <div class="row tight">
+        <button id="btn-discard" type="button">放弃修改</button>
+        <button id="btn-save-settings" type="button" class="primary">保存设置</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

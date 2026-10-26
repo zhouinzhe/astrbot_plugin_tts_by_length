@@ -1,0 +1,14 @@
+{
+  "views": {
+    "console": {
+      "title": "Console",
+      "description": "Voice library and all settings: manage voices, preview, and edit every option (mobile friendly)"
+    }
+  },
+  "pages": {
+    "console": {
+      "title": "Console",
+      "description": "Voice library and all settings: manage voices, preview, and edit every option (mobile friendly)"
+    }
+  }
+}

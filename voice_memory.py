@@ -6,6 +6,7 @@
 3. 找不到或拿不准时老实说拿不准，绝不乱猜。
 """
 
+import contextlib
 import json
 import os
 import re
@@ -145,8 +146,11 @@ class VoiceMemory:
         self.dirty = False
         self.write(self.path, snapshot)
 
-    def load(self) -> int:
-        """从磁盘读回记录，返回读到的条数。文件损坏时挪到 .bad，从空白开始。"""
+    def load(self, merge: bool = False) -> int:
+        """从磁盘读回记录，返回读到的条数。文件损坏时挪到 .bad，从空白开始。
+
+        merge=True：内存里已有的记录保留，和磁盘上的合并（按时间排序）；默认是用磁盘内容替换内存。
+        """
         if self.path is None or not self.path.exists():
             return 0
         try:
@@ -164,13 +168,18 @@ class VoiceMemory:
                 if records:
                     loaded[str(chat)] = records
         except Exception:  # noqa: BLE001
-            try:
+            with contextlib.suppress(OSError):
                 os.replace(self.path, self.path.with_name(self.path.name + ".bad"))
-            except OSError:
-                pass
             return 0
+        from_disk = sum(len(v) for v in loaded.values())
+        if merge:
+            for chat, records in self._chats.items():
+                merged = loaded.setdefault(chat, [])
+                merged.extend(records)
+                merged.sort(key=lambda r: r.ts)
+            self.dirty = True  # 合并后的内容要写回磁盘
         self._chats = loaded
-        return sum(len(v) for v in loaded.values())
+        return from_disk
 
     def prune(self, per_chat: int, keep_seconds: float) -> None:
         """按当前配置清理过期、超量的记录（启动时调用一次）。"""
